@@ -1,4 +1,4 @@
-package rippleeffect;
+package reaa;
 import java.util.Map;
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -13,14 +13,40 @@ public class OrganizationAccount {
 	HashMap<String, Double> dailyCosts = new HashMap<String, Double>();//to be read from csv in constructor
 	HashMap<String, Double> dailyIncome = new HashMap<String, Double>();//to be read from csv in constructor
 	
-	double supplyCost = 0.0; //default val
-	double billsTotal = 0.0; //default val
 	double expenses = 0.0; //default val
-	
 	double income = 0.0; //default val
 	char timeframe = 'M'; //set to M for Monthly (only valid to D,W,M,Y,C) // (day, week, month, year, custom)
 	double profit = 0.0; //default val
 	
+	private BufferedReader openCsv(String fileName) throws IOException {
+		// 1) try getResourceAsStream from this class (leading slash = classpath root)
+		InputStream is = getClass().getResourceAsStream("/" + fileName);
+		if (is != null) {
+			return new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+		}
+		// 2) try context ClassLoader (no leading slash)
+		InputStream is2 = Thread.currentThread().getContextClassLoader().getResourceAsStream(fileName);
+		if (is2 != null) {
+			return new BufferedReader(new InputStreamReader(is2, StandardCharsets.UTF_8));
+		}
+		// 3) try package path (e.g. src/main/dailyCosts.csv -> classpath resource 'main/dailyCosts.csv')
+		InputStream is3 = Thread.currentThread().getContextClassLoader().getResourceAsStream("main/" + fileName);
+		if (is3 != null) {
+			return new BufferedReader(new InputStreamReader(is3, StandardCharsets.UTF_8));
+		}
+		// 4) try working directory
+		File f = new File(fileName);
+		if (f.exists()) {
+			return new BufferedReader(new FileReader(f));
+		}
+		// 5) try src/ folder
+		File f2 = new File("src" + File.separator + fileName);
+		if (f2.exists()) {
+			return new BufferedReader(new FileReader(f2));
+		}
+		// not found
+		return null;
+	}
 	
 	public void processCashflow(){
 		// CSV file names (no path) — we'll try classpath first, then working dir, then src/
@@ -88,7 +114,7 @@ public class OrganizationAccount {
 		for (double cost : dailyCosts.values()) {
 			totalCosts += cost;
 		}
-		this.expenses = totalCosts + supplyCost + billsTotal;
+		this.expenses = totalCosts;
 		
 		// Calculate total income
 		double totalIncome = 0.0;
@@ -101,45 +127,6 @@ public class OrganizationAccount {
 		this.profit = this.income - this.expenses;
 	}
 	
-	/**
-	 * Try to open a CSV from multiple locations in this order:
-	 * 1) classpath (getResourceAsStream) — works when the CSV is in the source folder and copied to the classpath
-	 * 2) classpath via context ClassLoader (no leading slash)
-	 * 3) classpath under the package path `main/` (if the file is inside the `main` package folder)
-	 * 4) working directory (new File(fileName)) — useful when running from project root
-	 * 5) src/<fileName> — useful if the file is still in the source folder and not copied to the output folder
-	 *
-	 * Returns a BufferedReader or null if not found.
-	 */
-	private BufferedReader openCsv(String fileName) throws IOException {
-		// 1) try getResourceAsStream from this class (leading slash = classpath root)
-		InputStream is = getClass().getResourceAsStream("/" + fileName);
-		if (is != null) {
-			return new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
-		}
-		// 2) try context ClassLoader (no leading slash)
-		InputStream is2 = Thread.currentThread().getContextClassLoader().getResourceAsStream(fileName);
-		if (is2 != null) {
-			return new BufferedReader(new InputStreamReader(is2, StandardCharsets.UTF_8));
-		}
-		// 3) try package path (e.g. src/main/dailyCosts.csv -> classpath resource 'main/dailyCosts.csv')
-		InputStream is3 = Thread.currentThread().getContextClassLoader().getResourceAsStream("main/" + fileName);
-		if (is3 != null) {
-			return new BufferedReader(new InputStreamReader(is3, StandardCharsets.UTF_8));
-		}
-		// 4) try working directory
-		File f = new File(fileName);
-		if (f.exists()) {
-			return new BufferedReader(new FileReader(f));
-		}
-		// 5) try src/ folder
-		File f2 = new File("src" + File.separator + fileName);
-		if (f2.exists()) {
-			return new BufferedReader(new FileReader(f2));
-		}
-		// not found
-		return null;
-	}
 	
 	public double getIncome() {
 		return this.income;
@@ -150,4 +137,5 @@ public class OrganizationAccount {
 	public double getProfit() {
 		return this.profit;
 	}	
+	
 }
